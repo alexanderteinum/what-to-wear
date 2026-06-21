@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What to Wear | Standalone Weather Dressing Assistant</title>
+  <meta name="description" content="A clean, minimalist weather dressing assistant. Run serverless, directly in your browser.">
+  
+  <!-- Streamlined Fonts (Inter & System UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ==========================================================================
+       System-Adaptive Theme Tokens
+       ========================================================================== */
+    
+    /* Default: System Light Theme */
+    :root {
+      --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --bg-color: #f6f8fa;
+      --panel-bg: #ffffff;
+      --panel-border: rgba(0, 0, 0, 0.08);
+      --input-bg: #eef1f6;
+      
+      --text-primary: #181b24;
+      --text-secondary: #5c6270;
+      --text-muted: #8b92a5;
+      
+      /* Default Accents (Light Mode - slightly darker for contrast) */
+      --color-accent: #2563eb;      
+      --color-accent-rgb: 37, 99, 235;
+      --color-accent-dim: rgba(37, 99, 235, 0.08);
+      --color-accent-border: rgba(37, 99, 235, 0.22);
+      
+      --color-success: #059669;
+      --color-warning: #d97706;
+      --color-danger: #dc2626;
+      --color-info: #0891b2;
+      --transition-speed: 0.25s;
+    }
+
+    /* Accents by Weather Theme (Light Mode) */
+    body.theme-default {
+      --color-accent: #2563eb;
+      --color-accent-rgb: 37, 99, 235;
+    }
+    body.theme-sunny {
+      --color-accent: #d97706;
+      --color-accent-rgb: 217, 119, 6;
+    }
+    body.theme-cloudy {
+      --color-accent: #475569;
+      --color-accent-rgb: 71, 85, 105;
+    }
+    body.theme-rainy {
+      --color-accent: #0891b2;
+      --color-accent-rgb: 8, 145, 178;
+    }
+    body.theme-snowy {
+      --color-accent: #0284c7;
+      --color-accent-rgb: 2, 132, 199;
+    }
+
+    /* System Dark Theme Overrides */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #090a0f;
+        --panel-bg: #0f111a;
+        --panel-border: rgba(255, 255, 255, 0.06);
+        --input-bg: #141620;
+        
+        --text-primary: #f0f3f8;
+        --text-secondary: #8a90a0;
+        --text-muted: #525866;
+        
+        /* Accents (Dark Mode - glowing brightness) */
+        --color-accent: #3b82f6;      
+        --color-accent-rgb: 59, 130, 246;
+        --color-accent-dim: rgba(59, 130, 246, 0.08);
+        --color-accent-border: rgba(59, 130, 246, 0.2);
+        
+        --color-success: #10b981;
+        --color-warning: #f59e0b;
+        --color-danger: #ef4444;
+        --color-info: #06b6d4;
+      }
+
+      /* Accents by Weather Theme (Dark Mode) */
+      body.theme-default {
+        --color-accent: #3b82f6;
+        --color-accent-rgb: 59, 130, 246;
+      }
+      body.theme-sunny {
+        --color-accent: #f59e0b;
+        --color-accent-rgb: 245, 158, 11;
+      }
+      body.theme-cloudy {
+        --color-accent: #94a3b8;
+        --color-accent-rgb: 148, 163, 184;
+      }
+      body.theme-rainy {
+        --color-accent: #06b6d4;
+        --color-accent-rgb: 6, 182, 212;
+      }
+      body.theme-snowy {
+        --color-accent: #38bdf8;
+        --color-accent-rgb: 56, 189, 248;
+      }
+    }
+
+    /* ==========================================================================
+       Global Reset & Base Layout
+       ========================================================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      transition: background var(--transition-speed) ease, color var(--transition-speed) ease;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 8rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+    h1, h2, h3 {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    /* ==========================================================================
+       Header Layout
+       ========================================================================== */
+    .app-header {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 1.25rem;
+      transition: border-color var(--transition-speed) ease;
+    }
+    @media (min-width: 600px) {
+      .app-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+    .header-main {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .header-main h1 {
+      font-size: 1.35rem;
+      font-weight: 500;
+    }
+    .controls-container {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.5rem;
+      width: 100%;
+    }
+    @media (min-width: 600px) {
+      .controls-container {
+        justify-content: flex-end;
+        width: auto;
+      }
+    }
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-icon-text {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--text-primary);
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-body);
+      transition: all var(--transition-speed) ease;
+    }
+    .btn-icon-text:hover {
+      border-color: var(--text-secondary);
+      background: var(--input-bg);
+    }
+    .btn-icon-text .icon {
+      width: 0.85rem;
+      height: 0.85rem;
+    }
+    .btn-unit-toggle {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--text-secondary);
+      width: 2.1rem;
+      height: 2.1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.8rem;
+      transition: all var(--transition-speed) ease;
+    }
+    .btn-unit-toggle:hover {
+      border-color: var(--text-secondary);
+      color: var(--text-primary);
+      background: var(--input-bg);
+    }
+
+    /* Coords Input Form */
+    .coords-form {
+      width: 100%;
+      padding-top: 0.5rem;
+      animation: fadeIn 0.2s ease forwards;
+    }
+    @media (min-width: 600px) {
+      .coords-form {
+        margin-top: 0;
+      }
+    }
+    .form-row {
+      display: flex;
+      gap: 0.5rem;
+      max-width: 450px;
+    }
+    @media (min-width: 600px) {
+      .form-row {
+        margin-left: auto;
+      }
+    }
+    .coords-form input {
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--text-primary);
+      padding: 0.45rem 0.75rem;
+      border-radius: 6px;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      width: 100%;
+      outline: none;
+      transition: all var(--transition-speed) ease;
+    }
+    .coords-form input:focus {
+      border-color: var(--color-accent);
+    }
+    .btn-submit {
+      background: var(--text-primary);
+      color: var(--bg-color);
+      border: none;
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background var(--transition-speed) ease;
+    }
+    .form-error {
+      color: var(--color-danger);
+      font-size: 0.75rem;
+      margin-top: 0.4rem;
+      @media (min-width: 600px) {
+        text-align: right;
+      }
+    }
+
+    /* ==========================================================================
+       Dressing Dashboard Cards
+       ========================================================================== */
+    .loading-state, .error-state {
+      text-align: center;
+      padding: 4rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    .loading-bar {
+      width: 100%;
+      max-width: 180px;
+      height: 2px;
+      background: var(--panel-border);
+      position: relative;
+      overflow: hidden;
+    }
+    .loading-bar::after {
+      content: '';
+      position: absolute;
+      left: -50%;
+      height: 100%;
+      width: 40%;
+      background: var(--color-accent);
+      animation: loadingMove 1.2s infinite ease;
+    }
+    .btn-retry {
+      background: transparent;
+      border: 1px solid var(--color-accent);
+      color: var(--color-accent);
+      padding: 0.4rem 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+    }
+    .overview-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .overview-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 2.25rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.25rem;
+      transition: all var(--transition-speed) ease;
+    }
+    @media (min-width: 768px) {
+      .overview-card {
+        grid-template-columns: 1.2fr 1fr;
+      }
+    }
+    .weather-brief {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .weather-headline {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .temp-number {
+      font-size: 5rem;
+      font-weight: 300;
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+    }
+    .temp-degree {
+      font-size: 2.5rem;
+      font-weight: 300;
+      line-height: 1;
+      color: var(--text-secondary);
+    }
+    .weather-icon-wrap {
+      width: 3.5rem;
+      height: 3.5rem;
+      margin-left: 0.75rem;
+      display: flex;
+      align-items: center;
+      align-self: center;
+    }
+    .weather-icon-wrap svg {
+      width: 100%;
+      height: 100%;
+      stroke-width: 1.5;
+    }
+    .weather-meta h2 {
+      font-size: 1.5rem;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+    .weather-meta p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-top: 0.2rem;
+      text-transform: capitalize;
+    }
+    .weather-meta .meta-time {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-transform: none;
+      margin-top: 0.4rem;
+    }
+    .advice-brief {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      justify-content: center;
+      border-top: 1px solid var(--panel-border);
+      padding-top: 1.5rem;
+      transition: border-color var(--transition-speed) ease;
+    }
+    @media (min-width: 768px) {
+      .advice-brief {
+        border-top: none;
+        border-left: 1px solid var(--panel-border);
+        padding-top: 0;
+        padding-left: 2rem;
+      }
+    }
+    .advice-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    #outfit-advice {
+      font-size: 1.05rem;
+      line-height: 1.5;
+      color: var(--text-primary);
+    }
+    .rain-alert-box {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(220, 38, 38, 0.05);
+      border: 1px solid rgba(220, 38, 38, 0.15);
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      color: var(--color-danger);
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-top: 0.5rem;
+    }
+    .rain-alert-box .alert-icon {
+      width: 1rem;
+      height: 1rem;
+      color: var(--color-danger);
+      flex-shrink: 0;
+    }
+
+    /* Stats Grid */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    @media (min-width: 600px) {
+      .stats-bar {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    .stat-item {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      transition: all var(--transition-speed) ease;
+    }
+    .stat-lbl {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+    .stat-val {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .highlight-stat {
+      border-color: var(--color-accent-border);
+    }
+    .highlight-stat .stat-lbl {
+      color: var(--color-accent);
+    }
+    .warning-stat {
+      border-color: rgba(245, 158, 11, 0.3) !important;
+    }
+    .warning-stat .stat-lbl {
+      color: var(--color-warning) !important;
+    }
+    .warning-stat .stat-val {
+      color: var(--color-warning) !important;
+    }
+
+    /* ==========================================================================
+       Wardrobe & Checklist
+       ========================================================================== */
+    .checklist-section, .timeline-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .checklist-section h3, .timeline-section h3 {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .checklist-container {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      transition: all var(--transition-speed) ease;
+    }
+    .active-items-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+    .clothing-badge {
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--text-primary);
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all var(--transition-speed) ease;
+    }
+    .clothing-badge svg {
+      width: 1rem;
+      height: 1rem;
+      color: var(--text-secondary);
+    }
+    .clothing-badge.highlight {
+      background: var(--color-accent-dim);
+      border-color: var(--color-accent-border);
+      color: var(--text-primary);
+    }
+    .clothing-badge.highlight svg {
+      color: var(--color-accent);
+    }
+    .inactive-items-box {
+      border-top: 1px solid var(--panel-border);
+      padding-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      flex-wrap: wrap;
+      transition: border-color var(--transition-speed) ease;
+    }
+    .inactive-lbl {
+      color: var(--text-muted);
+    }
+    .inactive-list {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ==========================================================================
+       Timeline
+       ========================================================================== */
+    .timeline-scroll {
+      display: flex;
+      overflow-x: auto;
+      gap: 0.75rem;
+      padding-bottom: 0.5rem;
+    }
+    .timeline-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      padding: 1rem;
+      border-radius: 12px;
+      min-width: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      text-align: center;
+      flex-shrink: 0;
+      transition: all var(--transition-speed) ease;
+    }
+    .timeline-time {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .timeline-icon {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+    .timeline-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    .timeline-temp {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .timeline-stats {
+      font-size: 0.65rem;
+      font-weight: 700;
+    }
+    .timeline-advice {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      max-width: 90px;
+      line-height: 1.3;
+      margin-top: 0.15rem;
+    }
+    .app-footer {
+      text-align: center;
+      padding-top: 3rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    /* ==========================================================================
+       Simulator Panel
+       ========================================================================== */
+    .sim-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--panel-bg);
+      border-top: 1px solid var(--panel-border);
+      border-radius: 16px 16px 0 0;
+      z-index: 1000;
+      transform: translateY(calc(100% - 44px));
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background var(--transition-speed) ease, border-color var(--transition-speed) ease;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+    }
+    .sim-panel.open {
+      transform: translateY(0);
+    }
+    .sim-header {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .sim-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .sim-icon {
+      width: 0.95rem;
+      height: 0.95rem;
+      color: var(--color-accent);
+    }
+    .btn-reset-sim {
+      background: transparent;
+      border: 1px solid var(--color-danger);
+      color: var(--color-danger);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-speed) ease;
+    }
+    .btn-reset-sim:hover {
+      background: rgba(220, 38, 38, 0.05);
+    }
+    .sim-body {
+      padding: 1.5rem 1.5rem 2rem 1.5rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+    @media (min-width: 600px) {
+      .sim-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .sim-grid .full-width {
+        grid-column: span 2;
+      }
+    }
+    .sim-control {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .sim-lbl-container {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+    }
+    .sim-lbl {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    .sim-val-display {
+      font-weight: 600;
+      color: var(--color-accent);
+    }
+    .sim-control input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--input-bg);
+      border-radius: 2px;
+      outline: none;
+      transition: background var(--transition-speed) ease;
+    }
+    .sim-control input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    .sim-control input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .theme-buttons {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      margin-top: 0.25rem;
+    }
+    .btn-theme {
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--text-secondary);
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      flex-grow: 1;
+      transition: all var(--transition-speed) ease;
+    }
+    .btn-theme:hover {
+      border-color: var(--text-secondary);
+      color: var(--text-primary);
+    }
+    .btn-theme.active {
+      background: var(--color-accent-dim);
+      border-color: var(--color-accent-border);
+      color: var(--color-accent);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes loadingMove {
+      0% { left: -40%; }
+      100% { left: 100%; }
+    }
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body class="theme-default">
+  <div class="app-background"></div>
+  
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-main">
+        <h1>What to Wear</h1>
+        <span class="source-badge hidden" id="badge-source">Simulated</span>
+      </div>
+      
+      <div class="controls-container">
+        <div class="btn-group">
+          <button id="btn-gps" class="btn-icon-text" title="Locate Me">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+            </svg>
+            <span>GPS</span>
+          </button>
+          <button id="btn-custom-toggle" class="btn-icon-text">
+            <span>Custom Coordinates</span>
+          </button>
+          
+          <button id="unit-toggle-btn" class="btn-unit-toggle" title="Toggle Unit">°C</button>
+        </div>
+      </div>
+      
+      <form id="custom-coords-form" class="coords-form hidden">
+        <div class="form-row">
+          <input type="number" id="input-lat" step="any" min="-90" max="90" placeholder="Latitude">
+          <input type="number" id="input-lon" step="any" min="-180" max="180" placeholder="Longitude">
+          <button type="submit" class="btn-submit">Apply</button>
+        </div>
+        <p class="form-error hidden" id="coords-error">Please enter valid coordinates (-90 to 90, -180 to 180).</p>
+      </form>
+    </header>
+
+    <main class="app-main">
+      <div id="loading-state" class="loading-state hidden">
+        <div class="loading-bar"></div>
+        <p>Updating forecast...</p>
+      </div>
+
+      <div id="error-state" class="error-state hidden">
+        <h3>Connection Failed</h3>
+        <p id="error-message">Unable to connect to the weather service.</p>
+        <button id="btn-error-retry" class="btn-retry">Retry</button>
+      </div>
+
+      <div id="dashboard-content" class="dashboard-content">
+        <section class="overview-section">
+          <div class="overview-card">
+            <div class="weather-brief">
+              <div class="weather-headline">
+                <span class="temp-number" id="temp-display">--</span>
+                <span class="temp-degree">°</span>
+                <div class="weather-icon-wrap" id="weather-icon"></div>
+              </div>
+              <div class="weather-meta">
+                <h2 id="location-name">--</h2>
+                <p id="weather-description">Clear Sky</p>
+                <p class="meta-time" id="current-time">Sunday, 05:40</p>
+              </div>
+            </div>
+            
+            <div class="advice-brief">
+              <span class="advice-label">DRESSING ADVICE</span>
+              <p id="outfit-advice">Evaluating weather conditions...</p>
+              
+              <div id="rain-alert-container" class="rain-alert-box hidden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-icon">
+                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span id="rain-alert-text">Expect rain. Take an umbrella!</span>
+              </div>
+
+              <div id="lightning-alert-container" class="rain-alert-box hidden" style="background: rgba(217, 119, 6, 0.05); border-color: rgba(217, 119, 6, 0.25); color: var(--color-warning);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-icon" style="color: var(--color-warning);"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                <span id="lightning-alert-text">Lightning warning: Thunderstorms are expected. Stay safe!</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stats-bar">
+            <div class="stat-item">
+              <span class="stat-lbl">Humidity</span>
+              <span class="stat-val" id="humidity-display">--</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">Wind Speed</span>
+              <span class="stat-val" id="wind-display">--</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">Precipitation (3h)</span>
+              <span class="stat-val" id="rain-display">--</span>
+            </div>
+            <div class="stat-item" id="uv-stat-container">
+              <span class="stat-lbl">UV Index (2h Max)</span>
+              <span class="stat-val" id="uv-display">--</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="checklist-section">
+          <h3>Your Checklist</h3>
+          <div class="checklist-container">
+            <div class="active-items-list" id="active-wardrobe-list"></div>
+            <div class="inactive-items-box">
+              <span class="inactive-lbl">Not needed today:</span>
+              <span id="inactive-wardrobe-text" class="inactive-list">None</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="timeline-section">
+          <h3>Hourly Forecast</h3>
+          <div class="timeline-scroll" id="forecast-timeline-container"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="app-footer">
+      <p>Data direct from api.met.no. Standalone client app.</p>
+    </footer>
+  </div>
+
+  <div class="sim-panel" id="simulator-drawer">
+    <div class="sim-header" id="simulator-trigger">
+      <span class="sim-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sim-icon">
+          <circle cx="12" cy="12" r="10"/><path d="M10 15h4M12 9v4"/>
+        </svg>
+        <span>Weather Simulator</span>
+      </span>
+      <button class="btn-reset-sim hidden" id="btn-clear-sim">Reset to API</button>
+    </div>
+    
+    <div class="sim-body">
+      <div class="sim-grid">
+        <div class="sim-control">
+          <div class="sim-lbl-container">
+            <span class="sim-lbl">Temperature</span>
+            <span class="sim-val-display"><span id="val-sim-temp">15</span>°C</span>
+          </div>
+          <input type="range" id="sim-temp" min="-20" max="40" value="15" step="1">
+        </div>
+
+        <div class="sim-control">
+          <div class="sim-lbl-container">
+            <span class="sim-lbl">Precipitation (3h)</span>
+            <span class="sim-val-display"><span id="val-sim-rain">0.0</span> mm</span>
+          </div>
+          <input type="range" id="sim-rain" min="0" max="15" value="0" step="0.1">
+        </div>
+
+        <div class="sim-control full-width">
+          <span class="sim-lbl">Theme / Condition</span>
+          <div class="theme-buttons">
+            <button class="btn-theme active" data-sym="clearsky_day">Sunny</button>
+            <button class="btn-theme" data-sym="cloudy">Cloudy</button>
+            <button class="btn-theme" data-sym="rain">Rainy</button>
+            <button class="btn-theme" data-sym="snow">Snowy</button>
+            <button class="btn-theme" data-sym="heavyrainandthunder">Thunderstorm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Standalone Logic Script -->
+  <script>
+    // ==========================================================================
+    // Application State
+    // ==========================================================================
+    const state = {
+      lat: 59.9139, // Default: Oslo
+      lon: 10.7522,
+      locationName: 'Oslo',
+      isFahrenheit: false,
+      weatherData: null,
+      isSimulatorActive: false,
+      simTemp: 15,
+      simRain: 0.0,
+      simSymbol: 'clearsky_day'
+    };
+
+    // Parse query parameters immediately before DOM content loads to prevent location flashing
+    const urlParams = new URLSearchParams(window.location.search);
+    const latParam = urlParams.get('lat');
+    const lonParam = urlParams.get('lon');
+    if (latParam && lonParam) {
+      const parsedLat = parseFloat(latParam);
+      const parsedLon = parseFloat(lonParam);
+      if (!isNaN(parsedLat) && parsedLat >= -90 && parsedLat <= 90 && !isNaN(parsedLon) && parsedLon >= -180 && parsedLon <= 180) {
+        state.lat = parsedLat;
+        state.lon = parsedLon;
+        state.locationName = 'Locating...';
+      }
+    }
+
+    // SVG Weather Icons
+    const weatherIcons = {
+      clearsky: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>`,
+      fair: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v2M4.93 4.93l1.41 1.41M2 12h2M19.07 4.93l-1.41 1.41"/><path d="M12 6a4 4 0 0 1 4 4c0 .4-.07.78-.2 1.13"/><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
+      partlycloudy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v2M4.93 4.93l1.41 1.41M2 12h2M19.07 4.93l-1.41 1.41"/><path d="M12 6a4 4 0 0 1 4 4c0 .4-.07.78-.2 1.13"/><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
+      cloudy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
+      rain: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><path d="M8 20v2M12 20v2M16 20v2"/></svg>`,
+      heavyrain: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><path d="M8 20l-1 2.5M12 20l-1 2.5M16 20l-1 2.5"/></svg>`,
+      thunder: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+      snow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><path d="M7 22h2M8 21v2M7.3 21.3l1.4 1.4M8.7 21.3l-1.4 1.4M11 22h2M12 21v2M11.3 21.3l1.4 1.4M12.7 21.3l-1.4 1.4M15 22h2M16 21v2M15.3 21.3l1.4 1.4M16.7 21.3l-1.4 1.4"/></svg>`,
+      sleet: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><path d="M8 20l-1 2M12 20v2M16 20l-1 2"/></svg>`,
+      default: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>`
+    };
+
+    // SVG Clothing Icons
+    const clothingIcons = {
+      tshirt: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12l3 4.5V10h-3v11H6V10H3V7.5L6 3z"/><path d="M9 3a3 3 0 0 0 6 0"/></svg>`,
+      sweater: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12l4 7v3h-3v8H5v-8H2v-3l4-7z"/><path d="M8 3a4 4 0 0 0 8 0M5 10h14"/></svg>`,
+      lightJacket: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12l3 5v4h-2.5v9h-13v-9H3V8l3-5z"/><path d="M12 3v18M9 6l3 2 3-2"/></svg>`,
+      winterJacket: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12l3 5.5v3.5h-2v9H5v-9H3V8.5L6 3z"/><path d="M12 3v18M12 3a3 3 0 0 0-3 3v2a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 12h14"/></svg>`,
+      shorts: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h14v10l2.5 5v3h-8v-6l-1.5-1-1.5 1v6h-8v-3l2.5-5V3z"/></svg>`,
+      jeans: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h14v18h-6.5v-9L12 11l-.5 1v9H5V3z"/><path d="M5 6h14M9 3v3M15 3v3"/></svg>`,
+      umbrella: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22a3 3 0 0 1-3-3v-6M12 13V3m0 0a9 9 0 0 1 9 9h-9H3a9 9 0 0 1 9-9z"/></svg>`
+    };
+
+    // Client-Side Mock Weather Generator
+    function generateMockData(lat, lon, overrideTemp, overrideRain, overrideSymbol) {
+      const temp = overrideTemp !== null ? parseFloat(overrideTemp) : (15 + Math.sin(parseFloat(lat)) * 10);
+      const hasRain = overrideRain !== null ? parseFloat(overrideRain) > 0 : (Math.cos(parseFloat(lon)) > 0.3);
+      const rainAmount = overrideRain !== null ? parseFloat(overrideRain) : (hasRain ? 2.5 : 0.0);
+      
+      let symbol = overrideSymbol || 'clearsky_day';
+      if (!overrideSymbol) {
+        if (rainAmount > 0) {
+          symbol = rainAmount > 2 ? 'heavyrain' : 'rain';
+        } else if (temp < 0) {
+          symbol = 'snow';
+        } else if (temp < 15) {
+          symbol = 'partlycloudy_day';
+        }
+      }
+
+      const timeseries = [];
+      const now = new Date();
+
+      for (let i = 0; i < 24; i++) {
+        const forecastTime = new Date(now.getTime() + i * 3600 * 1000);
+        const hourFactor = Math.sin((forecastTime.getUTCHours() - 6) / 24 * 2 * Math.PI);
+        const hourTemp = parseFloat((temp + hourFactor * 3).toFixed(1));
+        
+        const hourRain = (i < 3 && hasRain) ? parseFloat((rainAmount / 3).toFixed(1)) : 0.0;
+        const hourSymbol = overrideSymbol || (hourRain > 0 ? (hourRain > 1 ? 'heavyrain' : 'rain') : symbol);
+        
+        const hourUtc = forecastTime.getUTCHours();
+        const uvFactor = Math.max(0.0, Math.cos((hourUtc - 12) / 24 * 2 * Math.PI));
+        const uvVal = parseFloat((uvFactor * 8.5).toFixed(1));
+
+        timeseries.push({
+          time: forecastTime.toISOString(),
+          data: {
+            instant: {
+              details: {
+                air_temperature: hourTemp,
+                relative_humidity: hourRain > 0 ? 95.0 : 65.0,
+                wind_speed: parseFloat((4.2 + Math.sin(i) * 2).toFixed(1)),
+                wind_from_direction: 210.0,
+                ultraviolet_index_clear_sky: uvVal
+              }
+            },
+            next_1_hours: {
+              summary: {
+                symbol_code: hourSymbol
+              },
+              details: {
+                precipitation_amount: hourRain
+              }
+            }
+          }
+        });
+      }
+
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [parseFloat(lon), parseFloat(lat), 10]
+        },
+        properties: {
+          meta: {
+            updated_at: now.toISOString(),
+            units: {
+              air_temperature: 'celsius',
+              precipitation_amount: 'mm',
+              wind_speed: 'm/s',
+              ultraviolet_index_clear_sky: '1'
+            },
+            is_mock: true
+          },
+          timeseries: timeseries
+        }
+      };
+    }
+
+    // ==========================================================================
+    // Dressing Decision Logic
+    // ==========================================================================
+    function evaluateClothing(temp, rainAmount3h) {
+      const rec = {
+        tshirt: false,
+        sweater: false,
+        lightJacket: false,
+        winterJacket: false,
+        shorts: false,
+        jeans: false,
+        umbrella: false,
+        textSummary: ''
+      };
+
+      if (temp >= 21) {
+        rec.shorts = true;
+      } else {
+        rec.jeans = true;
+      }
+
+      if (temp >= 25) {
+        rec.tshirt = true;
+        rec.textSummary = 'It is very warm. A t-shirt and shorts are recommended.';
+      } else if (temp >= 21) {
+        rec.tshirt = true;
+        rec.textSummary = 'Comfortable warm weather. A t-shirt and shorts are ideal.';
+      } else if (temp >= 16) {
+        rec.sweater = true;
+        rec.textSummary = 'Mild weather. A sweater and long pants are recommended.';
+      } else if (temp >= 8) {
+        rec.sweater = true;
+        rec.lightJacket = true;
+        rec.textSummary = 'Cool weather. A sweater and a light jacket are recommended.';
+      } else {
+        rec.sweater = true;
+        rec.winterJacket = true;
+        rec.textSummary = 'Cold conditions! A warm sweater and a heavy winter jacket are recommended.';
+      }
+
+      if (rainAmount3h > 0.1) {
+        rec.umbrella = true;
+        rec.textSummary += ' Also, rain is expected; bring an umbrella.';
+      }
+
+      return rec;
+    }
+
+    function formatTemp(celsius) {
+      if (state.isFahrenheit) {
+        return Math.round((celsius * 9 / 5) + 32);
+      }
+      return Math.round(celsius);
+    }
+
+    function getConditionName(symbolCode) {
+      if (!symbolCode) return 'Clear';
+      let name = symbolCode.replace(/_day|_night|_polartwilight/g, '').toLowerCase();
+      
+      // Expand common concatenated MET Norway words
+      name = name
+        .replace('clearsky', 'clear sky')
+        .replace('partlycloudy', 'partly cloudy')
+        .replace('heavyrain', 'heavy rain')
+        .replace('lightrain', 'light rain')
+        .replace('lightsnow', 'light snow')
+        .replace('lightsleet', 'light sleet')
+        .replace('rainshowers', 'rain showers')
+        .replace('snowshowers', 'snow showers')
+        .replace('sleetshowers', 'sleet showers')
+        .replace('andthunder', ' and thunder');
+
+      // Capitalize first letter of each word and join
+      return name
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '')
+        .join(' ');
+    }
+
+    function getWeatherIconSVG(symbolCode) {
+      if (!symbolCode) return weatherIcons.default;
+      const cleanCode = symbolCode.replace(/_day|_night|_polartwilight/g, '');
+      
+      if (cleanCode.includes('thunder')) return weatherIcons.thunder;
+      if (cleanCode.includes('clearsky')) return weatherIcons.clearsky;
+      if (cleanCode.includes('fair')) return weatherIcons.fair;
+      if (cleanCode.includes('partlycloudy')) return weatherIcons.partlycloudy;
+      if (cleanCode.includes('cloudy')) return weatherIcons.cloudy;
+      if (cleanCode.includes('heavyrain')) return weatherIcons.heavyrain;
+      if (cleanCode.includes('rain')) return weatherIcons.rain;
+      if (cleanCode.includes('snow')) return weatherIcons.snow;
+      if (cleanCode.includes('sleet')) return weatherIcons.sleet;
+      
+      return weatherIcons.default;
+    }
+
+    function updateVisualTheme(symbolCode, temp) {
+      const body = document.body;
+      body.className = '';
+
+      if (!symbolCode) {
+        body.classList.add('theme-default');
+        return;
+      }
+
+      const cleanCode = symbolCode.replace(/_day|_night|_polartwilight/g, '');
+
+      if (cleanCode.includes('snow') || temp < 3) {
+        body.classList.add('theme-snowy');
+      } else if (cleanCode.includes('heavyrain') || cleanCode.includes('rain') || cleanCode.includes('sleet')) {
+        body.classList.add('theme-rainy');
+      } else if (cleanCode.includes('cloudy')) {
+        body.classList.add('theme-cloudy');
+      } else if (cleanCode.includes('clearsky') || cleanCode.includes('fair') || temp >= 22) {
+        body.classList.add('theme-sunny');
+      } else {
+        body.classList.add('theme-default');
+      }
+    }
+
+    // ==========================================================================
+    // UI Rendering (Standardized to 24h Time)
+    // ==========================================================================
+    function renderUI() {
+      if (!state.weatherData) return;
+      
+      const properties = state.weatherData.properties;
+      const timeseries = properties.timeseries;
+      
+      if (!timeseries || timeseries.length === 0) return;
+      
+      // Find closest forecast time entry
+      const now = new Date();
+      let closestIndex = 0;
+      let minTimeDiff = Infinity;
+      
+      for (let i = 0; i < timeseries.length; i++) {
+        const itemTime = new Date(timeseries[i].time);
+        const diff = Math.abs(itemTime - now);
+        if (diff < minTimeDiff) {
+          minTimeDiff = diff;
+          closestIndex = i;
+        }
+      }
+
+      const currentForecast = timeseries[closestIndex];
+      const details = currentForecast.data.instant.details;
+      const currentTemp = details.air_temperature;
+      const humidity = details.relative_humidity;
+      const windSpeed = details.wind_speed;
+      const symbolCode = currentForecast.data.next_1_hours?.summary?.symbol_code || 'clearsky_day';
+      
+      // Calculate 3-hour rain accumulation and track thunder/lightning
+      let rain3h = 0.0;
+      let hasThunder3h = false;
+      const rainHours = Math.min(3, timeseries.length - closestIndex);
+      for (let i = 0; i < rainHours; i++) {
+        const pAmount = timeseries[closestIndex + i].data.next_1_hours?.details?.precipitation_amount;
+        if (pAmount) {
+          rain3h += pAmount;
+        }
+        const hourSymbol = timeseries[closestIndex + i].data.next_1_hours?.summary?.symbol_code || '';
+        if (hourSymbol.includes('thunder')) {
+          hasThunder3h = true;
+        }
+      }
+      rain3h = parseFloat(rain3h.toFixed(1));
+
+      // Calculate 2-hour max UV
+      let maxUV = 0.0;
+      const uvHours = Math.min(2, timeseries.length - closestIndex);
+      for (let i = 0; i < uvHours; i++) {
+        const uvVal = timeseries[closestIndex + i].data.instant.details.ultraviolet_index_clear_sky;
+        if (uvVal !== undefined && uvVal > maxUV) {
+          maxUV = uvVal;
+        }
+      }
+      maxUV = parseFloat(maxUV.toFixed(1));
+
+      const advice = evaluateClothing(currentTemp, rain3h);
+
+      updateVisualTheme(symbolCode, currentTemp);
+
+      // Render top overview details
+      document.getElementById('location-name').textContent = state.locationName;
+      document.getElementById('temp-display').textContent = formatTemp(currentTemp);
+      document.getElementById('weather-description').textContent = getConditionName(symbolCode);
+      document.getElementById('weather-icon').innerHTML = getWeatherIconSVG(symbolCode);
+      
+      // 24-HOUR TIME FORMAT: Display main time header in 24h
+      const displayTime = new Date(currentForecast.time);
+      const dayStr = displayTime.toLocaleDateString('en-US', { weekday: 'long' });
+      const time24h = displayTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      document.getElementById('current-time').textContent = `Forecast for ${dayStr}, ${time24h}`;
+
+      // Stats
+      document.getElementById('humidity-display').textContent = `${Math.round(humidity)}%`;
+      document.getElementById('wind-display').textContent = `${windSpeed.toFixed(1)} m/s`;
+      document.getElementById('rain-display').textContent = `${rain3h} mm`;
+      
+      // Render UV Index with exact values as returned by the API
+      const uvDisplay = document.getElementById('uv-display');
+      const uvContainer = document.getElementById('uv-stat-container');
+      let uvSeverity = 'Low';
+      if (maxUV >= 6.0) uvSeverity = 'High';
+      else if (maxUV >= 3.0) uvSeverity = 'Moderate';
+      uvDisplay.textContent = `${maxUV.toFixed(1)} (${uvSeverity})`;
+
+      // Highlight in warning orange only when sunscreen is needed (UV >= 3)
+      if (maxUV >= 3.0) {
+        uvContainer.classList.add('warning-stat');
+      } else {
+        uvContainer.classList.remove('warning-stat');
+      }
+
+      // Source Badge
+      const badgeSource = document.getElementById('badge-source');
+      if (properties.meta.is_mock) {
+        badgeSource.classList.remove('hidden');
+        badgeSource.textContent = state.isSimulatorActive ? 'Simulation' : 'Local Fallback';
+      } else {
+        badgeSource.classList.add('hidden');
+      }
+
+      // Render Advice text & rain/lightning alert boxes
+      document.getElementById('outfit-advice').textContent = advice.textSummary;
+      const alertContainer = document.getElementById('rain-alert-container');
+      if (advice.umbrella) {
+        alertContainer.classList.remove('hidden');
+        document.getElementById('rain-alert-text').textContent = `Rain coming: ${rain3h} mm expected. Bring an umbrella.`;
+      } else {
+        alertContainer.classList.add('hidden');
+      }
+
+      const lightningContainer = document.getElementById('lightning-alert-container');
+      if (hasThunder3h) {
+        lightningContainer.classList.remove('hidden');
+      } else {
+        lightningContainer.classList.add('hidden');
+      }
+
+      // Render active & inactive wardrobe checklist
+      const activeContainer = document.getElementById('active-wardrobe-list');
+      const inactiveText = document.getElementById('inactive-wardrobe-text');
+      activeContainer.innerHTML = '';
+
+      const wardrobeItems = [
+        { key: 'tshirt', name: 'T-Shirt', icon: clothingIcons.tshirt },
+        { key: 'sweater', name: 'Sweater', icon: clothingIcons.sweater },
+        { key: 'lightJacket', name: 'Light Jacket', icon: clothingIcons.lightJacket },
+        { key: 'winterJacket', name: 'Winter Jacket', icon: clothingIcons.winterJacket },
+        { key: 'shorts', name: 'Shorts', icon: clothingIcons.shorts },
+        { key: 'jeans', name: 'Jeans', icon: clothingIcons.jeans },
+        { key: 'umbrella', name: 'Umbrella', icon: clothingIcons.umbrella }
+      ];
+
+      const activeBadges = [];
+      const inactiveNames = [];
+
+      wardrobeItems.forEach(item => {
+        if (advice[item.key]) activeBadges.push(item);
+        else inactiveNames.push(item.name);
+      });
+
+      activeBadges.forEach(item => {
+        const badge = document.createElement('div');
+        const isHighlight = item.key === 'umbrella';
+        badge.className = `clothing-badge ${isHighlight ? 'highlight' : ''}`;
+        badge.innerHTML = `${item.icon} <span>${item.name}</span>`;
+        activeContainer.appendChild(badge);
+      });
+
+      inactiveText.textContent = inactiveNames.length > 0 ? inactiveNames.join(', ') : 'None';
+
+      // Render 12 hour timeline scroll
+      const timelineContainer = document.getElementById('forecast-timeline-container');
+      timelineContainer.innerHTML = '';
+
+      const maxTimelineHours = Math.min(12, timeseries.length - closestIndex);
+      for (let i = 0; i < maxTimelineHours; i++) {
+        const hourData = timeseries[closestIndex + i];
+        const hourTime = new Date(hourData.time);
+        const hourTemp = hourData.data.instant.details.air_temperature;
+        const hourSymbol = hourData.data.next_1_hours?.summary?.symbol_code || 'clearsky_day';
+        const hourRain = hourData.data.next_1_hours?.details?.precipitation_amount || 0.0;
+        const hourUV = hourData.data.instant.details.ultraviolet_index_clear_sky || 0.0;
+
+        // 24-HOUR TIME FORMAT: Display timeline time labels in 24h (HH:MM)
+        const formattedHour = hourTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const hourAdvice = evaluateClothing(hourTemp, hourRain);
+        
+        const activeItems = [];
+        if (hourAdvice.winterJacket) activeItems.push('Winter Jacket');
+        else if (hourAdvice.lightJacket) activeItems.push('Light Jacket');
+        else if (hourAdvice.sweater) activeItems.push('Sweater');
+        else activeItems.push('T-Shirt');
+
+        if (hourAdvice.shorts) activeItems.push('Shorts');
+        else activeItems.push('Jeans');
+
+        if (hourAdvice.umbrella) activeItems.push('☂️');
+
+        const itemEl = document.createElement('div');
+        itemEl.className = 'timeline-card';
+        itemEl.innerHTML = `
+          <span class="timeline-time">${i === 0 ? 'Now' : formattedHour}</span>
+          <div class="timeline-icon">${getWeatherIconSVG(hourSymbol)}</div>
+          <span class="timeline-temp">${formatTemp(hourTemp)}°</span>
+          ${hourRain > 0 ? `<span class="timeline-stats" style="color: var(--color-info);">${hourRain.toFixed(1)}mm</span>` : ''}
+          <span class="timeline-stats" style="color: ${hourUV >= 3.0 ? 'var(--color-warning)' : 'var(--text-muted)'};">UV ${hourUV.toFixed(1)}</span>
+          <span class="timeline-advice">${activeItems.join(', ')}</span>
+        `;
+        timelineContainer.appendChild(itemEl);
+      }
+    }
+
+    // ==========================================================================
+    // Fetch Weather Logic (Direct Fetch with Local Mock Fallback)
+    // ==========================================================================
+    async function loadWeatherData() {
+      const loadingState = document.getElementById('loading-state');
+      const errorState = document.getElementById('error-state');
+      const dashboardContent = document.getElementById('dashboard-content');
+
+      loadingState.classList.remove('hidden');
+      errorState.classList.add('hidden');
+      dashboardContent.style.opacity = '0.2';
+
+      const rLat = parseFloat(state.lat).toFixed(4);
+      const rLon = parseFloat(state.lon).toFixed(4);
+
+      if (state.isSimulatorActive) {
+        console.log(`[Simulator] Generating local overrides weather data...`);
+        const mockData = generateMockData(rLat, rLon, state.simTemp, state.simRain, state.simSymbol);
+        state.weatherData = mockData;
+        loadingState.classList.add('hidden');
+        dashboardContent.style.opacity = '1';
+        renderUI();
+        return;
+      }
+
+      // Direct MET Norway Complete API call
+      const apiUrl = `https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=${rLat}&lon=${rLon}`;
+
+      try {
+        console.log(`[App] Querying api.met.no direct: lat=${rLat}, lon=${rLon}`);
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+          throw new Error(`API returned status ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.properties && data.properties.meta) {
+          data.properties.meta.is_mock = false;
+        }
+        state.weatherData = data;
+        
+        loadingState.classList.add('hidden');
+        dashboardContent.style.opacity = '1';
+        renderUI();
+
+      } catch (err) {
+        console.warn(`[App Warning] Direct API request failed: ${err.message}. Generating fallback weather data locally.`);
+        const mockData = generateMockData(rLat, rLon, null, null, null);
+        state.weatherData = mockData;
+        
+        loadingState.classList.add('hidden');
+        dashboardContent.style.opacity = '1';
+        renderUI();
+      }
+    }
+
+    // OSM Reverse Geocoding
+    async function fetchLocationName(lat, lon) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+        if (res.ok) {
+          const data = await res.json();
+          state.locationName = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.county || data.display_name.split(',')[0];
+        } else {
+          state.locationName = `${parseFloat(lat).toFixed(2)}°, ${parseFloat(lon).toFixed(2)}°`;
+        }
+      } catch (e) {
+        state.locationName = `${parseFloat(lat).toFixed(2)}°, ${parseFloat(lon).toFixed(2)}°`;
+      }
+    }
+
+    async function setCoordinates(lat, lon, customName = null) {
+      state.lat = parseFloat(lat);
+      state.lon = parseFloat(lon);
+
+      // Update URL parameters dynamically without reloading the page
+      try {
+        const newSearch = `?lat=${state.lat.toFixed(4)}&lon=${state.lon.toFixed(4)}`;
+        window.history.replaceState({}, '', window.location.pathname + newSearch);
+      } catch (e) {
+        console.warn('[History API] Failed to replace state:', e);
+      }
+
+      if (customName) {
+        state.locationName = customName;
+        loadWeatherData();
+      } else {
+        state.locationName = 'Locating...';
+        renderUI();
+        await fetchLocationName(lat, lon);
+        loadWeatherData();
+      }
+    }
+
+    // ==========================================================================
+    // Event Setup
+    // ==========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      const unitToggleBtn = document.getElementById('unit-toggle-btn');
+      const customForm = document.getElementById('custom-coords-form');
+      const customToggle = document.getElementById('btn-custom-toggle');
+      const gpsButton = document.getElementById('btn-gps');
+
+      gpsButton.addEventListener('click', () => {
+        if (navigator.geolocation) {
+          gpsButton.style.opacity = '0.5';
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              gpsButton.style.opacity = '1';
+              customForm.classList.add('hidden');
+              setCoordinates(position.coords.latitude, position.coords.longitude);
+            },
+            (error) => {
+              gpsButton.style.opacity = '1';
+              alert(`Geolocation failed: ${error.message}. Please enter custom coordinates.`);
+            }
+          );
+        } else {
+          alert('Geolocation is not supported by your browser.');
+        }
+      });
+
+      customToggle.addEventListener('click', () => {
+        customForm.classList.toggle('hidden');
+        if (!customForm.classList.contains('hidden')) {
+          document.getElementById('input-lat').value = state.lat.toFixed(4);
+          document.getElementById('input-lon').value = state.lon.toFixed(4);
+        }
+      });
+
+      customForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const latVal = parseFloat(document.getElementById('input-lat').value);
+        const lonVal = parseFloat(document.getElementById('input-lon').value);
+        const errorEl = document.getElementById('coords-error');
+
+        if (isNaN(latVal) || latVal < -90 || latVal > 90 || isNaN(lonVal) || lonVal < -180 || lonVal > 180) {
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        errorEl.classList.add('hidden');
+        setCoordinates(latVal, lonVal);
+      });
+
+      unitToggleBtn.addEventListener('click', () => {
+        state.isFahrenheit = !state.isFahrenheit;
+        unitToggleBtn.textContent = state.isFahrenheit ? '°F' : '°C';
+        renderUI();
+      });
+
+      document.getElementById('btn-error-retry').addEventListener('click', () => {
+        loadWeatherData();
+      });
+
+      // Simulator Drawer Routines
+      const simDrawer = document.getElementById('simulator-drawer');
+      const simTrigger = document.getElementById('simulator-trigger');
+      const btnClearSim = document.getElementById('btn-clear-sim');
+      
+      simTrigger.addEventListener('click', (e) => {
+        if (e.target.closest('#btn-clear-sim')) return;
+        simDrawer.classList.toggle('open');
+      });
+
+      const simTempInput = document.getElementById('sim-temp');
+      const valSimTemp = document.getElementById('val-sim-temp');
+      const simRainInput = document.getElementById('sim-rain');
+      const valSimRain = document.getElementById('val-sim-rain');
+      const themeSelectBtns = document.querySelectorAll('.btn-theme');
+
+      function triggerSimulation() {
+        state.isSimulatorActive = true;
+        btnClearSim.classList.remove('hidden');
+        loadWeatherData();
+      }
+
+      simTempInput.addEventListener('input', (e) => {
+        state.simTemp = parseFloat(e.target.value);
+        valSimTemp.textContent = state.simTemp;
+      });
+      simTempInput.addEventListener('change', triggerSimulation);
+
+      simRainInput.addEventListener('input', (e) => {
+        state.simRain = parseFloat(e.target.value);
+        valSimRain.textContent = state.simRain.toFixed(1);
+      });
+      simRainInput.addEventListener('change', triggerSimulation);
+
+      themeSelectBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          themeSelectBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.simSymbol = btn.getAttribute('data-sym');
+          triggerSimulation();
+        });
+      });
+
+      btnClearSim.addEventListener('click', () => {
+        state.isSimulatorActive = false;
+        btnClearSim.classList.add('hidden');
+        
+        simTempInput.value = 15;
+        valSimTemp.textContent = 15;
+        state.simTemp = 15;
+
+        simRainInput.value = 0;
+        valSimRain.textContent = '0.0';
+        state.simRain = 0;
+
+        themeSelectBtns.forEach(b => b.classList.remove('active'));
+        themeSelectBtns[0].classList.add('active');
+        state.simSymbol = 'clearsky_day';
+
+        loadWeatherData();
+      });
+
+      // Load coordinates from URL parameters if parsed successfully during early script execution
+      if (latParam && lonParam && state.locationName === 'Locating...') {
+        console.log(`[Init] Loading coordinates from URL params: lat=${state.lat}, lon=${state.lon}`);
+        setCoordinates(state.lat, state.lon);
+      } else {
+        // Initial Weather Load (Oslo default)
+        loadWeatherData();
+      }
+    });
+  </script>
+</body>
+</html>
