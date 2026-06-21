@@ -2,6 +2,10 @@
 
 A single-file client-side web application that helps you decide what to wear based on real-time weather forecasts. It translates data from the MET Norway Weather API and into simple, minimalist dressing recommendations.
 
+## Live demo
+
+https://what-to-wear-2.netlify.app/
+
 ## Key Features
 
 - **Dressing Advice**: Recommends appropriate tops, bottoms, and jackets based on active temperature thresholds.
