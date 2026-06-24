@@ -1018,11 +1018,12 @@
 
       const timeseries = [];
       const now = new Date();
+      const currentHourFactor = Math.sin((now.getUTCHours() - 6) / 24 * 2 * Math.PI);
 
       for (let i = 0; i < 24; i++) {
         const forecastTime = new Date(now.getTime() + i * 3600 * 1000);
         const hourFactor = Math.sin((forecastTime.getUTCHours() - 6) / 24 * 2 * Math.PI);
-        const hourTemp = parseFloat((temp + hourFactor * 3).toFixed(1));
+        const hourTemp = parseFloat((temp + (hourFactor - currentHourFactor) * 3).toFixed(1));
         
         const hourRain = (i < 3 && hasRain) ? parseFloat((rainAmount / 3).toFixed(1)) : 0.0;
         const hourSymbol = overrideSymbol || (hourRain > 0 ? (hourRain > 1 ? 'heavyrain' : 'rain') : symbol);
