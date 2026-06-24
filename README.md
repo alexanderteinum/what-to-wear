@@ -1,6 +1,6 @@
 # What to Wear
 
-A single-file client-side web application that helps you decide what to wear based on real-time weather forecasts. It translates data from the MET Norway Weather API and into simple, minimalist dressing recommendations.
+A single-file client-side web application that helps you decide what to wear based on real-time weather forecasts. It translates data from the MET Norway Weather API into simple, minimalist dressing recommendations.
 
 ## Live Demo
 
