@@ -26,7 +26,7 @@ Because the application is serverless and self-contained, no installation or loc
 
 ## Files
 
-- [index.html](index.html): The complete frontend application containing HTML structure, Vanilla CSS styles, SVG iconography, dressing algorithms, API fetchers, and mock simulators.
+- [index.html](index.html): The complete frontend application.
 - [LICENSE](LICENSE): Project license (MIT).
 
 ## Data Sources
