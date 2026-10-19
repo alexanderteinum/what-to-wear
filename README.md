@@ -32,3 +32,11 @@ Because the application is serverless and self-contained, no installation or loc
 ## Data Sources
 
 - Meteorological data is fetched directly from the [MET Norway Weather API](https://api.met.no/).
+
+## Development
+
+Built with assistance from Gemini.
+
+## License
+
+[MIT](LICENSE) © 2026 Alexander Teinum.
